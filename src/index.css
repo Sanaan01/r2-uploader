@@ -1,0 +1,484 @@
+@import url("https://fonts.googleapis.com/css2?family=Georama:ital,wght@0,100..900;1,100..900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap");
+
+@import "tailwindcss";
+
+html,
+body {
+  width: 100dvw;
+  overflow: hidden;
+  height: 100dvh;
+  height: 100svh;
+  height: 100dvh;
+  background-color: black;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  background-color: black;
+}
+
+@theme {
+  --font-georama: "Georama", sans-serif;
+  --font-roboto: "Roboto Mono", monospace;
+
+  /* Custom animation for slide-up */
+  --animate-slide-up: slide-up 0.3s ease-out;
+  --animate-pulse-glow: pulse-glow 1.5s infinite;
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulse-glow {
+
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+
+    50% {
+      box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+  }
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@utility flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@utility col-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+@layer base {
+  main {
+    width: 100dvw;
+    height: 100dvh;
+    height: 100svh;
+    overflow: hidden;
+    background-color: black;
+    background-image: url("/images/wallpaper.png");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+
+  /* Window Controls - macOS traffic lights */
+  #window-controls {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  #window-controls .close {
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 9999px;
+    background-color: #ff6157;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  #window-controls .close:hover {
+    filter: brightness(0.9);
+  }
+
+  #window-controls .minimize {
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 9999px;
+    background-color: #ffc030;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  #window-controls .minimize:hover {
+    filter: brightness(0.9);
+  }
+
+  #window-controls .maximize {
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 9999px;
+    background-color: #2acb42;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  #window-controls .maximize:hover {
+    filter: brightness(0.9);
+  }
+
+  /* Window Header */
+  #window-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-top-left-radius: 0.75rem;
+    border-top-right-radius: 0.75rem;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    user-select: none;
+    font-size: 0.875rem;
+    color: #9ca3af;
+  }
+
+  .dark #window-header {
+    background-color: #323232;
+    border-color: #3f3f46;
+    color: white;
+  }
+
+  /* Main Window */
+  .window {
+    background-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    backdrop-filter: blur(24px);
+  }
+
+  .dark .window {
+    background-color: rgba(30, 30, 30, 0.95);
+  }
+
+  /* Upload Zone */
+  .upload-zone {
+    border: 2px dashed #d1d5db;
+    border-radius: 0.75rem;
+    padding: 2.5rem;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .dark .upload-zone {
+    border-color: #52525b;
+  }
+
+  .upload-zone:hover,
+  .upload-zone.dragover {
+    border-color: #3b82f6;
+    background-color: rgba(239, 246, 255, 0.5);
+  }
+
+  .dark .upload-zone:hover,
+  .dark .upload-zone.dragover {
+    background-color: rgba(30, 58, 138, 0.2);
+  }
+
+  .upload-zone.dragover {
+    transform: scale(1.02);
+    border-color: #60a5fa;
+  }
+
+  /* File Grid */
+  .file-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .file-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (min-width: 768px) {
+    .file-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .file-card {
+    position: relative;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background-color: #f3f4f6;
+    aspect-ratio: 1;
+  }
+
+  .dark .file-card {
+    background-color: #27272a;
+  }
+
+  .file-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+  }
+
+  .file-card:hover img {
+    transform: scale(1.05);
+  }
+
+  .file-card .overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent, transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .file-card:hover .overlay {
+    opacity: 1;
+  }
+
+  .file-card .actions {
+    position: absolute;
+    bottom: 0.5rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .file-card:hover .actions {
+    opacity: 1;
+  }
+
+  .file-card .file-name-tooltip {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0.5rem;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .file-card:hover .file-name-tooltip {
+    opacity: 1;
+  }
+
+  /* Progress Bar */
+  .progress-bar {
+    height: 0.375rem;
+    background-color: #e5e7eb;
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .dark .progress-bar {
+    background-color: #3f3f46;
+  }
+
+  .progress-bar .progress {
+    height: 100%;
+    background: linear-gradient(to right, #3b82f6, #60a5fa);
+    transition: all 0.3s;
+  }
+
+  .uploading .progress {
+    animation: pulse-glow 1.5s infinite;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    padding: 0.5rem 1rem;
+    background-color: #2563eb;
+    color: white;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-primary:hover {
+    background-color: #3b82f6;
+  }
+
+  .btn-secondary {
+    padding: 0.5rem 1rem;
+    background-color: #e5e7eb;
+    color: #1f2937;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-secondary:hover {
+    background-color: #d1d5db;
+  }
+
+  .dark .btn-secondary {
+    background-color: #3f3f46;
+    color: white;
+  }
+
+  .dark .btn-secondary:hover {
+    background-color: #52525b;
+  }
+
+  .btn-icon {
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(4px);
+    transition: all 0.2s;
+  }
+
+  .btn-icon:hover {
+    background-color: white;
+  }
+
+  .dark .btn-icon {
+    background-color: rgba(39, 39, 42, 0.8);
+  }
+
+  .dark .btn-icon:hover {
+    background-color: #3f3f46;
+  }
+
+  /* Status Badge */
+  .status-badge {
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 9999px;
+  }
+
+  .status-badge.pending {
+    background-color: #fef3c7;
+    color: #b45309;
+  }
+
+  .dark .status-badge.pending {
+    background-color: rgba(120, 53, 15, 0.5);
+    color: #fcd34d;
+  }
+
+  .status-badge.uploading {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+  }
+
+  .dark .status-badge.uploading {
+    background-color: rgba(30, 58, 138, 0.5);
+    color: #93c5fd;
+  }
+
+  .status-badge.success {
+    background-color: #dcfce7;
+    color: #15803d;
+  }
+
+  .dark .status-badge.success {
+    background-color: rgba(20, 83, 45, 0.5);
+    color: #86efac;
+  }
+
+  .status-badge.error {
+    background-color: #fee2e2;
+    color: #b91c1c;
+  }
+
+  .dark .status-badge.error {
+    background-color: rgba(127, 29, 29, 0.5);
+    color: #fca5a5;
+  }
+
+  /* Toast Notification */
+  .toast {
+    position: fixed;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(24px);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: slide-up 0.3s ease-out;
+  }
+
+  .toast.success {
+    background-color: rgba(34, 197, 94, 0.9);
+    color: white;
+  }
+
+  .toast.error {
+    background-color: rgba(239, 68, 68, 0.9);
+    color: white;
+  }
+
+  /* Dark mode scrollbar */
+  .dark *::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  .dark *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dark *::-webkit-scrollbar-thumb {
+    background-color: #4b4b4b;
+    border-radius: 20px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+
+  .dark *::-webkit-scrollbar-thumb:hover {
+    background-color: #5a5a5a;
+  }
+
+  .dark * {
+    scrollbar-color: #4b4b4b transparent;
+    scrollbar-width: thin;
+  }
+}
+
+/* Keyframes outside of @theme for browser compatibility */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+}
