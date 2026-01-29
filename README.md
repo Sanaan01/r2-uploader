@@ -1,8 +1,13 @@
 # r2-uploader
 
-Simple Cloudflare R2 uploader service that supports direct uploads via the server and presigned URLs for client-side uploads.
+Cloudflare R2 uploader service with a React + Vite GUI that matches the macOS-inspired look of the portfolio.
 
-## Setup
+## Project layout
+
+- `src/server.js`: Express uploader API.
+- `client/`: React + Vite UI.
+
+## Backend setup
 
 1. Install dependencies:
 
@@ -18,7 +23,28 @@ cp .env.example .env
 
 3. Fill in the environment variables.
 
-## Development
+### Development
+
+```bash
+npm run dev
+```
+
+## Frontend setup
+
+1. Install dependencies:
+
+```bash
+cd client
+npm install
+```
+
+2. Copy the example environment file:
+
+```bash
+cp .env.example .env
+```
+
+3. Start the UI:
 
 ```bash
 npm run dev
