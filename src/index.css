@@ -143,6 +143,16 @@ body {
     color: #9ca3af;
   }
 
+  /* Mobile window header - extra padding for notch/status bar */
+  @media (max-width: 639px) {
+    #window-header {
+      padding: 1rem 1rem 1rem 1rem;
+      padding-top: 3rem;
+      border-radius: 0;
+      min-height: 4rem;
+    }
+  }
+
   .dark #window-header {
     background-color: #323232;
     border-color: #3f3f46;
@@ -162,6 +172,26 @@ body {
     background-color: rgba(30, 30, 30, 0.95);
   }
 
+  /* Mobile window - full screen takeover like macOS portfolio */
+  @media (max-width: 639px) {
+    .window {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+    }
+
+    .window>div:last-child {
+      flex: 1;
+      overflow-y: auto;
+    }
+  }
+
   /* Upload Zone */
   .upload-zone {
     border: 2px dashed #d1d5db;
@@ -173,6 +203,13 @@ body {
 
   .dark .upload-zone {
     border-color: #52525b;
+  }
+
+  /* Mobile upload zone - smaller padding */
+  @media (max-width: 639px) {
+    .upload-zone {
+      padding: 1.5rem;
+    }
   }
 
   .upload-zone:hover,
@@ -337,6 +374,18 @@ body {
 
   .dark .btn-secondary:hover {
     background-color: #52525b;
+  }
+
+  /* Mobile button adjustments */
+  @media (max-width: 639px) {
+
+    .btn-primary,
+    .btn-secondary {
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      width: auto;
+      justify-content: center;
+    }
   }
 
   .btn-icon {
