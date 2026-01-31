@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Upload, AlertCircle, Settings, Tag, Image, FolderOpen, Plus, Loader2, X, GripVertical } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Upload, AlertCircle, Settings, Tag, Image, FolderOpen, Plus, Loader2, X, GripVertical, Save } from 'lucide-react';
 import { WindowFrame, Uploader, FileList, FileGallery, Toast, ThemeToggle } from './components';
 import { uploadFile, isR2Configured, getConfig, getCategories, createCategory, deleteCategory, saveCategoryOrder } from './services/r2';
 
@@ -22,6 +22,9 @@ function App() {
   const [draggedCategoryIndex, setDraggedCategoryIndex] = useState(null);
   const [dragOverCategoryIndex, setDragOverCategoryIndex] = useState(null);
   const [confirmDeleteCategory, setConfirmDeleteCategory] = useState(null); // {id, title}
+  const [categoryOrderChanged, setCategoryOrderChanged] = useState(false);
+  const [savingCategoryOrder, setSavingCategoryOrder] = useState(false);
+  const originalCategoryOrderRef = useRef([]);
 
   // Apply theme
   useEffect(() => {
@@ -59,6 +62,7 @@ function App() {
         const result = await getCategories();
         // Extract just the titles for backward compatibility
         setAvailableCategories(result.categories || []);
+        originalCategoryOrderRef.current = (result.categories || []).map(c => c.id);
       } catch (err) {
         console.error('Failed to fetch categories:', err);
         // Fallback to default categories
@@ -108,14 +112,9 @@ function App() {
 
   // Category drag-and-drop handlers
   const handleCategoryDragStart = useCallback((e, index) => {
-    // Only allow dragging non-default categories
-    if (availableCategories[index]?.isDefault) {
-      e.preventDefault();
-      return;
-    }
     setDraggedCategoryIndex(index);
     e.dataTransfer.effectAllowed = 'move';
-  }, [availableCategories]);
+  }, []);
 
   const handleCategoryDragOver = useCallback((e, index) => {
     e.preventDefault();
@@ -129,7 +128,7 @@ function App() {
     setDragOverCategoryIndex(null);
   }, []);
 
-  const handleCategoryDrop = useCallback(async (e, dropIndex) => {
+  const handleCategoryDrop = useCallback((e, dropIndex) => {
     e.preventDefault();
 
     if (draggedCategoryIndex === null || draggedCategoryIndex === dropIndex) {
@@ -146,13 +145,25 @@ function App() {
     setDraggedCategoryIndex(null);
     setDragOverCategoryIndex(null);
 
-    // Save new order to server
+    // Check if order changed from original
+    const newOrder = newCategories.map(c => c.id);
+    const hasChanged = newOrder.some((id, i) => id !== originalCategoryOrderRef.current[i]);
+    setCategoryOrderChanged(hasChanged);
+  }, [draggedCategoryIndex, availableCategories]);
+
+  const handleSaveCategoryOrder = useCallback(async () => {
+    setSavingCategoryOrder(true);
     try {
-      await saveCategoryOrder(newCategories);
+      await saveCategoryOrder(availableCategories);
+      originalCategoryOrderRef.current = availableCategories.map(c => c.id);
+      setCategoryOrderChanged(false);
+      setToast({ message: 'Category order saved!', type: 'success' });
     } catch (err) {
       setToast({ message: err.message || 'Failed to save category order', type: 'error' });
+    } finally {
+      setSavingCategoryOrder(false);
     }
-  }, [draggedCategoryIndex, availableCategories]);
+  }, [availableCategories]);
 
   const handleCategoryDragEnd = useCallback(() => {
     setDraggedCategoryIndex(null);
@@ -365,10 +376,26 @@ function App() {
             <>
               {/* Category Selector */}
               <div className="mb-4 p-4 bg-white/5 rounded-xl border border-white/10">
-                <div className="flex items-center gap-2 mb-3">
-                  <Tag className="w-4 h-4 text-blue-400" />
-                  <span className="text-sm font-medium text-gray-300">Upload Categories</span>
-                  {categoriesLoading && <Loader2 className="w-3 h-3 animate-spin text-gray-500" />}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-blue-400" />
+                    <span className="text-sm font-medium text-gray-300">Upload Categories</span>
+                    {categoriesLoading && <Loader2 className="w-3 h-3 animate-spin text-gray-500" />}
+                  </div>
+                  {categoryOrderChanged && (
+                    <button
+                      onClick={handleSaveCategoryOrder}
+                      disabled={savingCategoryOrder}
+                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-green-600 hover:bg-green-700 disabled:bg-green-800 rounded-lg transition-colors"
+                    >
+                      {savingCategoryOrder ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Save className="w-3 h-3" />
+                      )}
+                      Save Order
+                    </button>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {availableCategories.map((cat, index) => (
@@ -380,18 +407,15 @@ function App() {
                       onDragLeave={handleCategoryDragLeave}
                       onDrop={(e) => handleCategoryDrop(e, index)}
                       onDragEnd={handleCategoryDragEnd}
-                      className={`group relative flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all text-sm
+                      className={`group relative flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all text-sm cursor-grab active:cursor-grabbing
                         ${selectedCategories.includes(cat.title)
                           ? 'bg-blue-500/20 border border-blue-500/50 text-blue-300'
                           : 'bg-white/5 border border-white/10 text-gray-400 hover:border-white/20'}
-                        ${!cat.isDefault ? 'cursor-grab active:cursor-grabbing' : ''}
                         ${dragOverCategoryIndex === index ? 'border-green-500 scale-105' : ''}
                         ${draggedCategoryIndex === index ? 'opacity-50' : ''}`}
                     >
-                      {/* Drag handle for custom categories */}
-                      {!cat.isDefault && (
-                        <GripVertical className="w-3 h-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity -ml-1" />
-                      )}
+                      {/* Drag handle */}
+                      <GripVertical className="w-3 h-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity -ml-1" />
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
