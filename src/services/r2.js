@@ -223,6 +223,66 @@ export const deleteCategory = async (categoryId) => {
 };
 
 /**
+ * Get gallery order from server
+ * @returns {Promise<{order: string[]}>}
+ */
+export const getGalleryOrder = async () => {
+    try {
+        const response = await fetch(`${UPLOAD_API_URL}/gallery-order`, {
+            method: 'GET',
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to fetch gallery order');
+        }
+
+        return result;
+    } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('Cannot connect to server.');
+        }
+        throw error;
+    }
+};
+
+/**
+ * Save gallery order to server
+ * @param {string[]} order - Array of image keys in display order
+ * @returns {Promise<{success: boolean}>}
+ */
+export const saveGalleryOrder = async (order) => {
+    if (!isR2Configured()) {
+        throw new Error('Upload API not configured.');
+    }
+
+    try {
+        const response = await fetch(`${UPLOAD_API_URL}/gallery-order`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Upload-Key': UPLOAD_API_KEY,
+            },
+            body: JSON.stringify({ order }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to save gallery order');
+        }
+
+        return result;
+    } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('Cannot connect to server.');
+        }
+        throw error;
+    }
+};
+
+/**
  * Get R2 configuration status
  * @returns {object}
  */
@@ -231,4 +291,3 @@ export const getConfig = () => ({
     apiUrl: UPLOAD_API_URL,
     hasApiKey: !!UPLOAD_API_KEY,
 });
-

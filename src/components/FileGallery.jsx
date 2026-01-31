@@ -1,6 +1,74 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Trash2, RefreshCw, Image, Calendar, Tag, Loader2, AlertCircle } from 'lucide-react';
-import { listFiles, deleteFile } from '../services/r2';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Trash2, RefreshCw, Image, Loader2, AlertCircle, GripVertical, Save, Lock } from 'lucide-react';
+import { listFiles, deleteFile, getGalleryOrder, saveGalleryOrder } from '../services/r2';
+
+// Static images from portfolio constants (non-deletable but reorderable)
+const STATIC_IMAGES = [
+    {
+        key: 'static/goreme.JPG',
+        url: 'https://sanaan.dev/images/goreme.JPG',
+        thumbnail: 'https://sanaan.dev/images/thumbnails/goreme.webp',
+        originalName: 'goreme.JPG',
+        categories: ['Library', 'Favorites', 'Cappadocia'],
+        isStatic: true,
+    },
+    {
+        key: 'static/sapanca.JPG',
+        url: 'https://sanaan.dev/images/sapanca.JPG',
+        thumbnail: 'https://sanaan.dev/images/thumbnails/sapanca.webp',
+        originalName: 'sapanca.JPG',
+        categories: ['Library', 'Favorites', 'Cappadocia'],
+        isStatic: true,
+    },
+    {
+        key: 'static/volcano.JPG',
+        url: 'https://sanaan.dev/images/volcano.JPG',
+        thumbnail: 'https://sanaan.dev/images/thumbnails/volcano.webp',
+        originalName: 'volcano.JPG',
+        categories: ['Library', 'Favorites', 'Cappadocia'],
+        isStatic: true,
+    },
+    {
+        key: 'static/cave.JPG',
+        url: 'https://assets.sanaan.dev/constants/cave.JPG',
+        thumbnail: 'https://sanaan.dev/images/thumbnails/cave.webp',
+        originalName: 'cave.JPG',
+        categories: ['Library', 'Cappadocia'],
+        isStatic: true,
+    },
+    {
+        key: 'static/sanaanfull.JPG',
+        url: 'https://sanaan.dev/images/sanaanfull.JPG',
+        thumbnail: 'https://sanaan.dev/images/thumbnails/sanaanfull.webp',
+        originalName: 'sanaanfull.JPG',
+        categories: ['Library', 'People'],
+        isStatic: true,
+    },
+    {
+        key: 'static/balloon1.JPG',
+        url: 'https://sanaan.dev/images/balloon1.JPG',
+        thumbnail: 'https://sanaan.dev/images/thumbnails/balloon1.webp',
+        originalName: 'balloon1.JPG',
+        categories: ['Library', 'Cappadocia'],
+        isStatic: true,
+    },
+    {
+        key: 'static/balloon2.JPG',
+        url: 'https://sanaan.dev/images/balloon2.JPG',
+        thumbnail: 'https://sanaan.dev/images/thumbnails/balloon2.webp',
+        originalName: 'balloon2.JPG',
+        categories: ['Library', 'Cappadocia'],
+        isStatic: true,
+    },
+    {
+        key: 'static/balloon3.JPG',
+        url: 'https://sanaan.dev/images/balloon3.JPG',
+        thumbnail: 'https://sanaan.dev/images/thumbnails/balloon3.webp',
+        originalName: 'balloon3.JPG',
+        categories: ['Library', 'Cappadocia'],
+        isStatic: true,
+    },
+];
 
 function FileGallery({ onRefresh }) {
     const [files, setFiles] = useState([]);
@@ -8,13 +76,53 @@ function FileGallery({ onRefresh }) {
     const [error, setError] = useState(null);
     const [deleting, setDeleting] = useState(null);
     const [confirmDelete, setConfirmDelete] = useState(null);
+    const [orderChanged, setOrderChanged] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [draggedIndex, setDraggedIndex] = useState(null);
+    const [dragOverIndex, setDragOverIndex] = useState(null);
+    const originalOrderRef = useRef([]);
 
     const fetchFiles = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const result = await listFiles();
-            setFiles(result.files || []);
+            // Fetch uploaded files and saved order in parallel
+            const [filesResult, orderResult] = await Promise.all([
+                listFiles(),
+                getGalleryOrder().catch(() => ({ order: [] })),
+            ]);
+
+            const uploadedFiles = (filesResult.files || []).map(f => ({ ...f, isStatic: false }));
+            const allFiles = [...uploadedFiles, ...STATIC_IMAGES];
+
+            // Apply saved order if it exists
+            const savedOrder = orderResult.order || [];
+            if (savedOrder.length > 0) {
+                // Create a map for quick lookup
+                const fileMap = new Map(allFiles.map(f => [f.key, f]));
+                const orderedFiles = [];
+
+                // Add files in saved order
+                for (const key of savedOrder) {
+                    if (fileMap.has(key)) {
+                        orderedFiles.push(fileMap.get(key));
+                        fileMap.delete(key);
+                    }
+                }
+
+                // Add any remaining files not in the saved order (new uploads)
+                for (const file of fileMap.values()) {
+                    orderedFiles.unshift(file); // New files at the start
+                }
+
+                setFiles(orderedFiles);
+                originalOrderRef.current = orderedFiles.map(f => f.key);
+            } else {
+                setFiles(allFiles);
+                originalOrderRef.current = allFiles.map(f => f.key);
+            }
+
+            setOrderChanged(false);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -27,11 +135,14 @@ function FileGallery({ onRefresh }) {
     }, [fetchFiles]);
 
     const handleDelete = async (file) => {
+        if (file.isStatic) return; // Can't delete static files
+
         setDeleting(file.key);
         try {
             await deleteFile(file.key);
             setFiles(prev => prev.filter(f => f.key !== file.key));
             setConfirmDelete(null);
+            setOrderChanged(true);
             if (onRefresh) onRefresh();
         } catch (err) {
             setError(`Failed to delete: ${err.message}`);
@@ -40,13 +151,74 @@ function FileGallery({ onRefresh }) {
         }
     };
 
+    const handleSaveOrder = async () => {
+        setSaving(true);
+        try {
+            const order = files.map(f => f.key);
+            await saveGalleryOrder(order);
+            originalOrderRef.current = order;
+            setOrderChanged(false);
+        } catch (err) {
+            setError(`Failed to save order: ${err.message}`);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Drag and drop handlers
+    const handleDragStart = (e, index) => {
+        setDraggedIndex(index);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', index);
+    };
+
+    const handleDragOver = (e, index) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setDragOverIndex(index);
+    };
+
+    const handleDragLeave = () => {
+        setDragOverIndex(null);
+    };
+
+    const handleDrop = (e, dropIndex) => {
+        e.preventDefault();
+
+        if (draggedIndex === null || draggedIndex === dropIndex) {
+            setDraggedIndex(null);
+            setDragOverIndex(null);
+            return;
+        }
+
+        const newFiles = [...files];
+        const [draggedFile] = newFiles.splice(draggedIndex, 1);
+        newFiles.splice(dropIndex, 0, draggedFile);
+
+        setFiles(newFiles);
+        setDraggedIndex(null);
+        setDragOverIndex(null);
+
+        // Check if order changed from original
+        const newOrder = newFiles.map(f => f.key);
+        const hasChanged = newOrder.some((key, i) => key !== originalOrderRef.current[i]);
+        setOrderChanged(hasChanged);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedIndex(null);
+        setDragOverIndex(null);
+    };
+
     const formatSize = (bytes) => {
+        if (!bytes) return 'Static';
         if (bytes < 1024) return `${bytes} B`;
         if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
         return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     };
 
     const formatDate = (date) => {
+        if (!date) return 'Constant';
         return new Date(date).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
@@ -92,46 +264,89 @@ function FileGallery({ onRefresh }) {
         <div className="space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">{files.length} file(s)</span>
-                <button
-                    onClick={fetchFiles}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                    <RefreshCw className="w-4 h-4" />
-                    Refresh
-                </button>
+                <span className="text-sm text-gray-400">
+                    {files.length} file(s) • Drag to reorder
+                </span>
+                <div className="flex gap-2">
+                    {orderChanged && (
+                        <button
+                            onClick={handleSaveOrder}
+                            disabled={saving}
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 disabled:bg-green-800 rounded-lg transition-colors"
+                        >
+                            {saving ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Save className="w-4 h-4" />
+                            )}
+                            Save Order
+                        </button>
+                    )}
+                    <button
+                        onClick={fetchFiles}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                        Refresh
+                    </button>
+                </div>
             </div>
 
             {/* File Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {files.map((file) => (
+                {files.map((file, index) => (
                     <div
                         key={file.key}
-                        className="group relative bg-white/5 rounded-xl overflow-hidden border border-white/10 hover:border-white/20 transition-all"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, index)}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, index)}
+                        onDragEnd={handleDragEnd}
+                        className={`group relative bg-white/5 rounded-xl overflow-hidden border transition-all cursor-grab active:cursor-grabbing
+                            ${dragOverIndex === index ? 'border-blue-500 scale-105' : 'border-white/10 hover:border-white/20'}
+                            ${draggedIndex === index ? 'opacity-50' : ''}`}
                     >
+                        {/* Drag Handle */}
+                        <div className="absolute top-1 left-1 z-10 p-1 bg-black/50 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                            <GripVertical className="w-4 h-4 text-white" />
+                        </div>
+
+                        {/* Static Badge */}
+                        {file.isStatic && (
+                            <div className="absolute top-1 right-1 z-10 p-1 bg-yellow-500/80 rounded" title="Static image (non-deletable)">
+                                <Lock className="w-3 h-3 text-black" />
+                            </div>
+                        )}
+
                         {/* Thumbnail */}
                         <div className="aspect-square relative overflow-hidden bg-black/20">
                             <img
-                                src={file.url}
+                                src={file.thumbnail || file.url}
                                 alt={file.originalName}
                                 className="w-full h-full object-cover"
                                 loading="lazy"
                             />
 
-                            {/* Hover Overlay */}
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <button
-                                    onClick={() => setConfirmDelete(file)}
-                                    className="p-3 bg-red-500/80 hover:bg-red-500 rounded-full transition-colors"
-                                    disabled={deleting === file.key}
-                                >
-                                    {deleting === file.key ? (
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                    ) : (
-                                        <Trash2 className="w-5 h-5" />
-                                    )}
-                                </button>
-                            </div>
+                            {/* Hover Overlay - only show delete for non-static */}
+                            {!file.isStatic && (
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setConfirmDelete(file);
+                                        }}
+                                        className="p-3 bg-red-500/80 hover:bg-red-500 rounded-full transition-colors"
+                                        disabled={deleting === file.key}
+                                    >
+                                        {deleting === file.key ? (
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            <Trash2 className="w-5 h-5" />
+                                        )}
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* File Info */}
