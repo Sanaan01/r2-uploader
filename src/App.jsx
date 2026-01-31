@@ -1,13 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Upload, AlertCircle, Settings } from 'lucide-react';
+import { Upload, AlertCircle, Settings, Tag } from 'lucide-react';
 import { WindowFrame, Uploader, FileList, Toast, ThemeToggle } from './components';
 import { uploadFile, isR2Configured, getConfig } from './services/r2';
+
+// Available categories (must match portfolio galleryLinks)
+const AVAILABLE_CATEGORIES = ['Library', 'Cappadocia', 'Qatar', 'People', 'Favorites'];
 
 function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system');
   const [files, setFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [selectedCategories, setSelectedCategories] = useState(['Library']);
 
   // Apply theme
   useEffect(() => {
@@ -49,10 +53,11 @@ function App() {
       url: null,
       error: null,
       copied: false,
+      categories: [...selectedCategories], // Store selected categories with file
     }));
 
     setFiles((prev) => [...prev, ...fileEntries]);
-  }, []);
+  }, [selectedCategories]);
 
   // Remove a file
   const handleRemoveFile = useCallback((id) => {
@@ -81,6 +86,22 @@ function App() {
     setToast({ message: 'URL copied to clipboard!', type: 'success' });
   }, []);
 
+  // Toggle a category selection
+  const handleCategoryToggle = useCallback((category) => {
+    setSelectedCategories((prev) => {
+      if (prev.includes(category)) {
+        // Don't allow removing the last category
+        if (prev.length === 1) {
+          setToast({ message: 'At least one category is required', type: 'error' });
+          return prev;
+        }
+        return prev.filter((c) => c !== category);
+      } else {
+        return [...prev, category];
+      }
+    });
+  }, []);
+
   // Upload all pending files
   const handleUploadAll = useCallback(async () => {
     const pendingFiles = files.filter((f) => f.status === 'pending');
@@ -105,13 +126,18 @@ function App() {
       );
 
       try {
-        const result = await uploadFile(fileEntry.file, null, (progress) => {
-          setFiles((prev) =>
-            prev.map((f) =>
-              f.id === fileEntry.id ? { ...f, progress } : f
-            )
-          );
-        });
+        const result = await uploadFile(
+          fileEntry.file,
+          null,
+          (progress) => {
+            setFiles((prev) =>
+              prev.map((f) =>
+                f.id === fileEntry.id ? { ...f, progress } : f
+              )
+            );
+          },
+          selectedCategories // Use current selection at upload time, not stored categories
+        );
 
         // Update status to success
         setFiles((prev) =>
@@ -146,7 +172,7 @@ function App() {
         type: 'success',
       });
     }
-  }, [files]);
+  }, [files, selectedCategories]);
 
   // Clear all completed uploads
   const handleClearCompleted = useCallback(() => {
@@ -197,6 +223,47 @@ function App() {
 
         {/* Main Window */}
         <WindowFrame title="Gallery Upload">
+          {/* Category Selector */}
+          <div className="mb-4 p-4 bg-white/5 rounded-xl border border-white/10">
+            <div className="flex items-center gap-2 mb-3">
+              <Tag className="w-4 h-4 text-blue-400" />
+              <span className="text-sm font-medium text-gray-300">Upload Categories</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {AVAILABLE_CATEGORIES.map((category) => (
+                <label
+                  key={category}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all text-sm
+                    ${selectedCategories.includes(category)
+                      ? 'bg-blue-500/20 border border-blue-500/50 text-blue-300'
+                      : 'bg-white/5 border border-white/10 text-gray-400 hover:border-white/20'}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedCategories.includes(category)}
+                    onChange={() => handleCategoryToggle(category)}
+                    className="sr-only"
+                  />
+                  <span className={`w-3 h-3 rounded border flex items-center justify-center
+                    ${selectedCategories.includes(category)
+                      ? 'bg-blue-500 border-blue-500'
+                      : 'border-gray-500'}`}
+                  >
+                    {selectedCategories.includes(category) && (
+                      <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 12 12">
+                        <path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" />
+                      </svg>
+                    )}
+                  </span>
+                  {category}
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Selected categories will be applied to all new uploads
+            </p>
+          </div>
+
           <Uploader onFilesSelected={handleFilesSelected} />
 
           <FileList
