@@ -21,8 +21,10 @@ const WindowFrame = ({ children, title = "R2 Uploader" }) => {
                 </h2>
                 <div className="w-16 hidden sm:block" /> {/* Spacer for centering */}
             </div>
-            <div className="p-4 sm:p-6 bg-white dark:bg-[#1e1e1e]">
-                {children}
+            <div className="flex-1 bg-white dark:bg-[#1e1e1e] overflow-y-auto max-h-[70vh] sm:max-h-[600px] custom-scrollbar">
+                <div className="p-4 sm:p-6">
+                    {children}
+                </div>
             </div>
         </div>
     );
