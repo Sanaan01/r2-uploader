@@ -59,7 +59,7 @@ function App() {
         // Fallback to default categories
         setAvailableCategories([
           { id: 'library', title: 'Library', isDefault: true },
-          { id: 'cappadocia', title: 'Cappadocia' },
+          { id: 'turkey', title: 'Turkey' },
           { id: 'qatar', title: 'Qatar' },
           { id: 'people', title: 'People' },
           { id: 'favorites', title: 'Favorites' },
