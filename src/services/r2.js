@@ -34,9 +34,10 @@ const createR2Client = () => {
  * @param {File} file - The file to upload
  * @param {string} customPath - Optional custom path/filename
  * @param {function} onProgress - Optional progress callback (0-100)
+ * @param {string[]} categories - Categories for the image (default: ['Library'])
  * @returns {Promise<{key: string, url: string}>}
  */
-export const uploadFile = async (file, customPath = null, onProgress = null) => {
+export const uploadFile = async (file, customPath = null, onProgress = null, categories = ['Library']) => {
     const client = createR2Client();
 
     // Generate unique filename with timestamp
@@ -52,6 +53,13 @@ export const uploadFile = async (file, customPath = null, onProgress = null) => 
         Key: key,
         Body: new Uint8Array(arrayBuffer),
         ContentType: file.type,
+        // Cache for 1 year (Cloudflare Image Resizing will cache transformed images)
+        CacheControl: 'public, max-age=31536000',
+        // Store categories and upload timestamp in custom metadata
+        Metadata: {
+            categories: categories.join(','),
+            uploadedAt: new Date().toISOString(),
+        },
     });
 
     // Note: AWS SDK v3 doesn't support upload progress in browser
