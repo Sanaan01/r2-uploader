@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Upload, AlertCircle, Settings, Tag, Image, FolderOpen, Plus, Loader2 } from 'lucide-react';
+import { Upload, AlertCircle, Settings, Tag, Image, FolderOpen, Plus, Loader2, X } from 'lucide-react';
 import { WindowFrame, Uploader, FileList, FileGallery, Toast, ThemeToggle } from './components';
-import { uploadFile, isR2Configured, getConfig, getCategories, createCategory } from './services/r2';
+import { uploadFile, isR2Configured, getConfig, getCategories, createCategory, deleteCategory } from './services/r2';
 
 function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system');
@@ -87,6 +87,19 @@ function App() {
       setIsCreatingCategory(false);
     }
   }, [newCategoryName]);
+
+  // Delete custom category
+  const handleDeleteCategory = useCallback(async (categoryId, categoryTitle) => {
+    try {
+      await deleteCategory(categoryId);
+      setAvailableCategories((prev) => prev.filter((c) => c.id !== categoryId));
+      // Remove from selected if it was selected
+      setSelectedCategories((prev) => prev.filter((c) => c !== categoryTitle));
+      setToast({ message: `Category "${categoryTitle}" deleted!`, type: 'success' });
+    } catch (err) {
+      setToast({ message: err.message || 'Failed to delete category', type: 'error' });
+    }
+  }, []);
 
   // Handle new files selected
   const handleFilesSelected = useCallback((newFiles) => {
@@ -301,32 +314,47 @@ function App() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {availableCategories.map((cat) => (
-                    <label
+                    <div
                       key={cat.id}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all text-sm
+                      className={`group relative flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-sm
                         ${selectedCategories.includes(cat.title)
                           ? 'bg-blue-500/20 border border-blue-500/50 text-blue-300'
                           : 'bg-white/5 border border-white/10 text-gray-400 hover:border-white/20'}`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(cat.title)}
-                        onChange={() => handleCategoryToggle(cat.title)}
-                        className="sr-only"
-                      />
-                      <span className={`w-3 h-3 rounded border flex items-center justify-center
-                        ${selectedCategories.includes(cat.title)
-                          ? 'bg-blue-500 border-blue-500'
-                          : 'border-gray-500'}`}
-                      >
-                        {selectedCategories.includes(cat.title) && (
-                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 12 12">
-                            <path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" />
-                          </svg>
-                        )}
-                      </span>
-                      {cat.title}
-                    </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedCategories.includes(cat.title)}
+                          onChange={() => handleCategoryToggle(cat.title)}
+                          className="sr-only"
+                        />
+                        <span className={`w-3 h-3 rounded border flex items-center justify-center
+                          ${selectedCategories.includes(cat.title)
+                            ? 'bg-blue-500 border-blue-500'
+                            : 'border-gray-500'}`}
+                        >
+                          {selectedCategories.includes(cat.title) && (
+                            <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 12 12">
+                              <path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" />
+                            </svg>
+                          )}
+                        </span>
+                        {cat.title}
+                      </label>
+                      {/* Delete button for custom categories */}
+                      {!cat.isDefault && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCategory(cat.id, cat.title);
+                          }}
+                          className="ml-1 p-0.5 rounded hover:bg-red-500/30 text-gray-500 hover:text-red-400 transition-colors"
+                          title={`Delete ${cat.title}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
 
