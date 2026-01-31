@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Trash2, RefreshCw, Image, Loader2, AlertCircle, GripVertical, Save, Lock } from 'lucide-react';
 import { listFiles, deleteFile, getGalleryOrder, saveGalleryOrder } from '../services/r2';
 
+// Threshold for long-press to initiate drag on mobile (ms)
+const TOUCH_HOLD_DURATION = 300;
+
 // Static images from portfolio constants (non-deletable but reorderable)
 const STATIC_IMAGES = [
     {
@@ -89,6 +92,12 @@ function FileGallery({ onRefresh, onToast }) {
     const [draggedIndex, setDraggedIndex] = useState(null);
     const [dragOverIndex, setDragOverIndex] = useState(null);
     const originalOrderRef = useRef([]);
+
+    // Touch drag state
+    const touchStartRef = useRef(null);
+    const touchHoldTimerRef = useRef(null);
+    const touchDraggingRef = useRef(false);
+    const gridRef = useRef(null);
 
     const fetchFiles = useCallback(async () => {
         setLoading(true);
@@ -229,6 +238,110 @@ function FileGallery({ onRefresh, onToast }) {
         setDragOverIndex(null);
     };
 
+    // Touch event handlers for mobile drag-and-drop
+    const handleTouchStart = useCallback((e, index) => {
+        const touch = e.touches[0];
+        touchStartRef.current = { x: touch.clientX, y: touch.clientY, index };
+
+        // Start a timer for long-press detection
+        touchHoldTimerRef.current = setTimeout(() => {
+            touchDraggingRef.current = true;
+            setDraggedIndex(index);
+            // Add haptic feedback if available
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }, TOUCH_HOLD_DURATION);
+    }, []);
+
+    const handleTouchMove = useCallback((e) => {
+        if (!touchDraggingRef.current || draggedIndex === null) {
+            // Cancel the long-press timer if user moves before it triggers
+            if (touchHoldTimerRef.current) {
+                const touch = e.touches[0];
+                const start = touchStartRef.current;
+                if (start) {
+                    const dx = Math.abs(touch.clientX - start.x);
+                    const dy = Math.abs(touch.clientY - start.y);
+                    if (dx > 10 || dy > 10) {
+                        clearTimeout(touchHoldTimerRef.current);
+                        touchHoldTimerRef.current = null;
+                    }
+                }
+            }
+            return;
+        }
+
+        e.preventDefault();
+        const touch = e.touches[0];
+
+        // Find which element we're over
+        const elements = gridRef.current?.querySelectorAll('[data-drag-index]');
+        if (!elements) return;
+
+        let targetIndex = null;
+        elements.forEach((el) => {
+            const rect = el.getBoundingClientRect();
+            if (
+                touch.clientX >= rect.left &&
+                touch.clientX <= rect.right &&
+                touch.clientY >= rect.top &&
+                touch.clientY <= rect.bottom
+            ) {
+                targetIndex = parseInt(el.dataset.dragIndex, 10);
+            }
+        });
+
+        if (targetIndex !== null && targetIndex !== draggedIndex) {
+            setDragOverIndex(targetIndex);
+        } else {
+            setDragOverIndex(null);
+        }
+    }, [draggedIndex]);
+
+    const handleTouchEnd = useCallback(() => {
+        // Clear the long-press timer
+        if (touchHoldTimerRef.current) {
+            clearTimeout(touchHoldTimerRef.current);
+            touchHoldTimerRef.current = null;
+        }
+
+        if (!touchDraggingRef.current || draggedIndex === null) {
+            touchDraggingRef.current = false;
+            touchStartRef.current = null;
+            return;
+        }
+
+        // Perform the reorder if we have a valid drop target
+        if (dragOverIndex !== null && draggedIndex !== dragOverIndex) {
+            const newFiles = [...files];
+            const [draggedFile] = newFiles.splice(draggedIndex, 1);
+            newFiles.splice(dragOverIndex, 0, draggedFile);
+
+            setFiles(newFiles);
+
+            // Check if order changed from original
+            const newOrder = newFiles.map(f => f.key);
+            const hasChanged = newOrder.some((key, i) => key !== originalOrderRef.current[i]);
+            setOrderChanged(hasChanged);
+        }
+
+        // Reset touch state
+        touchDraggingRef.current = false;
+        touchStartRef.current = null;
+        setDraggedIndex(null);
+        setDragOverIndex(null);
+    }, [draggedIndex, dragOverIndex, files]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (touchHoldTimerRef.current) {
+                clearTimeout(touchHoldTimerRef.current);
+            }
+        };
+    }, []);
+
     const formatSize = (bytes) => {
         if (!bytes) return 'Static';
         if (bytes < 1024) return `${bytes} B`;
@@ -313,22 +426,29 @@ function FileGallery({ onRefresh, onToast }) {
             </div>
 
             {/* File Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div
+                ref={gridRef}
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+            >
                 {files.map((file, index) => (
                     <div
                         key={file.key}
+                        data-drag-index={index}
                         draggable
                         onDragStart={(e) => handleDragStart(e, index)}
                         onDragOver={(e) => handleDragOver(e, index)}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, index)}
                         onDragEnd={handleDragEnd}
-                        className={`group relative bg-white/5 rounded-xl overflow-hidden border transition-all cursor-grab active:cursor-grabbing
+                        onTouchStart={(e) => handleTouchStart(e, index)}
+                        className={`group relative bg-white/5 rounded-xl overflow-hidden border transition-all cursor-grab active:cursor-grabbing select-none
                             ${dragOverIndex === index ? 'border-blue-500 scale-105' : 'border-white/10 hover:border-white/20'}
-                            ${draggedIndex === index ? 'opacity-50' : ''}`}
+                            ${draggedIndex === index ? 'opacity-50 scale-95' : ''}`}
                     >
-                        {/* Drag Handle */}
-                        <div className="absolute top-1 left-1 z-10 p-1 bg-black/50 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Drag Handle - Always visible on mobile for touch feedback */}
+                        <div className="absolute top-1 left-1 z-10 p-1 bg-black/50 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                             <GripVertical className="w-4 h-4 text-white" />
                         </div>
 
