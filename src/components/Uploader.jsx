@@ -3,6 +3,7 @@ import { Upload, Image, X, Loader2 } from 'lucide-react';
 
 const Uploader = ({ onFilesSelected }) => {
     const [isDragOver, setIsDragOver] = useState(false);
+    const [isTouching, setIsTouching] = useState(false);
     const fileInputRef = useRef(null);
 
     const handleDragOver = useCallback((e) => {
@@ -48,13 +49,25 @@ const Uploader = ({ onFilesSelected }) => {
         fileInputRef.current?.click();
     };
 
+    // Touch handlers for visual feedback
+    const handleTouchStart = useCallback(() => {
+        setIsTouching(true);
+    }, []);
+
+    const handleTouchEnd = useCallback(() => {
+        setIsTouching(false);
+    }, []);
+
     return (
         <div
-            className={`upload-zone ${isDragOver ? 'dragover' : ''}`}
+            className={`upload-zone ${isDragOver ? 'dragover' : ''} ${isTouching ? 'active' : ''}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={handleClick}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
         >
             <input
                 ref={fileInputRef}
@@ -71,10 +84,12 @@ const Uploader = ({ onFilesSelected }) => {
                 </div>
                 <div className="text-center">
                     <p className="text-lg font-medium text-gray-700 dark:text-gray-200 font-georama">
-                        Drop images here
+                        <span className="hidden sm:inline">Drop images here</span>
+                        <span className="sm:hidden">Tap to upload images</span>
                     </p>
                     <p className="text-sm mt-1">
-                        or <span className="text-blue-600 dark:text-blue-400 hover:underline">browse</span> to upload
+                        <span className="hidden sm:inline">or <span className="text-blue-600 dark:text-blue-400 hover:underline">browse</span> to upload</span>
+                        <span className="sm:hidden text-blue-600 dark:text-blue-400">Select from gallery or camera</span>
                     </p>
                 </div>
                 <p className="text-xs text-gray-400 dark:text-gray-500">
