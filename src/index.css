@@ -505,6 +505,35 @@ body {
     scrollbar-color: #4b4b4b transparent;
     scrollbar-width: thin;
   }
+
+  /* Custom scrollbar utility */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #4b4b4b;
+  }
+
+  .dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: #5a5a5a;
+  }
 }
 
 /* Keyframes outside of @theme for browser compatibility */

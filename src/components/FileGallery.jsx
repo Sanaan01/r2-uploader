@@ -70,6 +70,14 @@ const STATIC_IMAGES = [
     },
 ];
 
+// Generate Cloudflare Image Resizing thumbnail URL
+// MUST match gallery.json.js format exactly so we use the same cached thumbnail
+const getThumbnailUrl = (url) => {
+    if (!url) return '';
+    // 800px long side, maintain aspect ratio, same as portfolio
+    return `https://sanaan.dev/cdn-cgi/image/width=800,fit=scale-down,quality=85,format=auto/${url}`;
+};
+
 function FileGallery({ onRefresh }) {
     const [files, setFiles] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -92,7 +100,12 @@ function FileGallery({ onRefresh }) {
                 getGalleryOrder().catch(() => ({ order: [] })),
             ]);
 
-            const uploadedFiles = (filesResult.files || []).map(f => ({ ...f, isStatic: false }));
+            const uploadedFiles = (filesResult.files || []).map(f => ({
+                ...f,
+                isStatic: false,
+                // Generate Cloudflare CDN thumbnail if not already set
+                thumbnail: f.thumbnail || getThumbnailUrl(f.url),
+            }));
             const allFiles = [...uploadedFiles, ...STATIC_IMAGES];
 
             // Apply saved order if it exists
