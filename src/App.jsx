@@ -136,7 +136,7 @@ function App() {
               )
             );
           },
-          fileEntry.categories // Pass categories to uploadFile
+          selectedCategories // Use current selection at upload time, not stored categories
         );
 
         // Update status to success
@@ -172,7 +172,7 @@ function App() {
         type: 'success',
       });
     }
-  }, [files]);
+  }, [files, selectedCategories]);
 
   // Clear all completed uploads
   const handleClearCompleted = useCallback(() => {
