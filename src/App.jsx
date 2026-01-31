@@ -523,7 +523,11 @@ function App() {
 
           {/* Gallery Tab Content */}
           {activeTab === 'gallery' && (
-            <FileGallery key={galleryKey} onRefresh={() => setGalleryKey((k) => k + 1)} />
+            <FileGallery
+              key={galleryKey}
+              onRefresh={() => setGalleryKey((k) => k + 1)}
+              onToast={setToast}
+            />
           )}
         </WindowFrame>
 

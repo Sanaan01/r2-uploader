@@ -469,6 +469,7 @@ body {
     align-items: center;
     gap: 0.75rem;
     animation: slide-up 0.3s ease-out;
+    z-index: 200;
   }
 
   .toast.success {

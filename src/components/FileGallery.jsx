@@ -78,7 +78,7 @@ const getThumbnailUrl = (url) => {
     return `https://sanaan.dev/cdn-cgi/image/width=800,fit=scale-down,quality=85,format=auto/${url}`;
 };
 
-function FileGallery({ onRefresh }) {
+function FileGallery({ onRefresh, onToast }) {
     const [files, setFiles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -171,8 +171,14 @@ function FileGallery({ onRefresh }) {
             await saveGalleryOrder(order);
             originalOrderRef.current = order;
             setOrderChanged(false);
+            if (onToast) {
+                onToast({ message: 'Gallery order saved!', type: 'success' });
+            }
         } catch (err) {
             setError(`Failed to save order: ${err.message}`);
+            if (onToast) {
+                onToast({ message: `Failed to save order: ${err.message}`, type: 'error' });
+            }
         } finally {
             setSaving(false);
         }
@@ -276,8 +282,8 @@ function FileGallery({ onRefresh }) {
     return (
         <div className="space-y-4">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">
+            <div className="flex items-center justify-between gap-2">
+                <span className="text-xs sm:text-sm text-gray-400">
                     {files.length} file(s) • Drag to reorder
                 </span>
                 <div className="flex gap-2">
@@ -285,22 +291,23 @@ function FileGallery({ onRefresh }) {
                         <button
                             onClick={handleSaveOrder}
                             disabled={saving}
-                            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 disabled:bg-green-800 rounded-lg transition-colors"
+                            className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-green-600 hover:bg-green-700 disabled:bg-green-800 rounded-lg transition-colors"
                         >
                             {saving ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
                             ) : (
-                                <Save className="w-4 h-4" />
+                                <Save className="w-3 h-3 sm:w-4 sm:h-4" />
                             )}
-                            Save Order
+                            <span className="hidden sm:inline">Save Order</span>
+                            <span className="sm:hidden">Save</span>
                         </button>
                     )}
                     <button
                         onClick={fetchFiles}
-                        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                        className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 text-xs sm:text-sm bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
                     >
-                        <RefreshCw className="w-4 h-4" />
-                        Refresh
+                        <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">Refresh</span>
                     </button>
                 </div>
             </div>
