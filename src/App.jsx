@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Upload, AlertCircle, Settings, Tag, Image, FolderOpen } from 'lucide-react';
+import { Upload, AlertCircle, Settings, Tag, Image, FolderOpen, Plus, Loader2 } from 'lucide-react';
 import { WindowFrame, Uploader, FileList, FileGallery, Toast, ThemeToggle } from './components';
-import { uploadFile, isR2Configured, getConfig } from './services/r2';
-
-// Available categories (must match portfolio galleryLinks)
-const AVAILABLE_CATEGORIES = ['Library', 'Cappadocia', 'Qatar', 'People', 'Favorites'];
+import { uploadFile, isR2Configured, getConfig, getCategories, createCategory } from './services/r2';
 
 function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system');
@@ -14,6 +11,12 @@ function App() {
   const [toast, setToast] = useState(null);
   const [selectedCategories, setSelectedCategories] = useState(['Library']);
   const [galleryKey, setGalleryKey] = useState(0); // Force gallery refresh
+
+  // Dynamic categories
+  const [availableCategories, setAvailableCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
   // Apply theme
   useEffect(() => {
@@ -42,6 +45,48 @@ function App() {
       return () => mediaQuery.removeEventListener('change', handler);
     }
   }, [theme]);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const result = await getCategories();
+        // Extract just the titles for backward compatibility
+        setAvailableCategories(result.categories || []);
+      } catch (err) {
+        console.error('Failed to fetch categories:', err);
+        // Fallback to default categories
+        setAvailableCategories([
+          { id: 'library', title: 'Library', isDefault: true },
+          { id: 'cappadocia', title: 'Cappadocia' },
+          { id: 'qatar', title: 'Qatar' },
+          { id: 'people', title: 'People' },
+          { id: 'favorites', title: 'Favorites' },
+        ]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Create new category
+  const handleCreateCategory = useCallback(async () => {
+    if (!newCategoryName.trim()) return;
+
+    setIsCreatingCategory(true);
+    try {
+      const result = await createCategory(newCategoryName.trim());
+      setAvailableCategories(result.categories);
+      setNewCategoryName('');
+      setToast({ message: `Category "${result.category.title}" created!`, type: 'success' });
+    } catch (err) {
+      setToast({ message: err.message || 'Failed to create category', type: 'error' });
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  }, [newCategoryName]);
 
   // Handle new files selected
   const handleFilesSelected = useCallback((newFiles) => {
@@ -252,37 +297,65 @@ function App() {
                 <div className="flex items-center gap-2 mb-3">
                   <Tag className="w-4 h-4 text-blue-400" />
                   <span className="text-sm font-medium text-gray-300">Upload Categories</span>
+                  {categoriesLoading && <Loader2 className="w-3 h-3 animate-spin text-gray-500" />}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {AVAILABLE_CATEGORIES.map((category) => (
+                  {availableCategories.map((cat) => (
                     <label
-                      key={category}
+                      key={cat.id}
                       className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-all text-sm
-                        ${selectedCategories.includes(category)
+                        ${selectedCategories.includes(cat.title)
                           ? 'bg-blue-500/20 border border-blue-500/50 text-blue-300'
                           : 'bg-white/5 border border-white/10 text-gray-400 hover:border-white/20'}`}
                     >
                       <input
                         type="checkbox"
-                        checked={selectedCategories.includes(category)}
-                        onChange={() => handleCategoryToggle(category)}
+                        checked={selectedCategories.includes(cat.title)}
+                        onChange={() => handleCategoryToggle(cat.title)}
                         className="sr-only"
                       />
                       <span className={`w-3 h-3 rounded border flex items-center justify-center
-                        ${selectedCategories.includes(category)
+                        ${selectedCategories.includes(cat.title)
                           ? 'bg-blue-500 border-blue-500'
                           : 'border-gray-500'}`}
                       >
-                        {selectedCategories.includes(category) && (
+                        {selectedCategories.includes(cat.title) && (
                           <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 12 12">
                             <path d="M10.28 2.28L3.989 8.575 1.695 6.28A1 1 0 00.28 7.695l3 3a1 1 0 001.414 0l7-7A1 1 0 0010.28 2.28z" />
                           </svg>
                         )}
                       </span>
-                      {category}
+                      {cat.title}
                     </label>
                   ))}
                 </div>
+
+                {/* Add New Category */}
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleCreateCategory()}
+                      placeholder="New category name..."
+                      className="flex-1 px-3 py-1.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/50"
+                    />
+                    <button
+                      onClick={handleCreateCategory}
+                      disabled={isCreatingCategory || !newCategoryName.trim()}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors"
+                    >
+                      {isCreatingCategory ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Plus className="w-3.5 h-3.5" />
+                      )}
+                      Add
+                    </button>
+                  </div>
+                </div>
+
                 <p className="text-xs text-gray-500 mt-2">
                   Selected categories will be applied to all new uploads
                 </p>

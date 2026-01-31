@@ -131,6 +131,98 @@ export const checkHealth = async () => {
 };
 
 /**
+ * Get all categories from server
+ * @returns {Promise<{categories: Array}>}
+ */
+export const getCategories = async () => {
+    try {
+        const response = await fetch(`${UPLOAD_API_URL}/categories`, {
+            method: 'GET',
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to fetch categories');
+        }
+
+        return result;
+    } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('Cannot connect to server.');
+        }
+        throw error;
+    }
+};
+
+/**
+ * Create a new category
+ * @param {string} title - Category title
+ * @param {string} icon - Optional icon path
+ * @returns {Promise<{category: object, categories: Array}>}
+ */
+export const createCategory = async (title, icon = null) => {
+    if (!isR2Configured()) {
+        throw new Error('Upload API not configured.');
+    }
+
+    try {
+        const response = await fetch(`${UPLOAD_API_URL}/categories`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Upload-Key': UPLOAD_API_KEY,
+            },
+            body: JSON.stringify({ title, icon }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to create category');
+        }
+
+        return result;
+    } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('Cannot connect to server.');
+        }
+        throw error;
+    }
+};
+
+/**
+ * Delete a category
+ * @param {string} categoryId - Category ID to delete
+ * @returns {Promise<{success: boolean}>}
+ */
+export const deleteCategory = async (categoryId) => {
+    if (!isR2Configured()) {
+        throw new Error('Upload API not configured.');
+    }
+
+    try {
+        const response = await fetch(`${UPLOAD_API_URL}/categories/${encodeURIComponent(categoryId)}`, {
+            method: 'DELETE',
+            headers: { 'X-Upload-Key': UPLOAD_API_KEY },
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to delete category');
+        }
+
+        return result;
+    } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('Cannot connect to server.');
+        }
+        throw error;
+    }
+};
+
+/**
  * Get R2 configuration status
  * @returns {object}
  */
@@ -139,3 +231,4 @@ export const getConfig = () => ({
     apiUrl: UPLOAD_API_URL,
     hasApiKey: !!UPLOAD_API_KEY,
 });
+
