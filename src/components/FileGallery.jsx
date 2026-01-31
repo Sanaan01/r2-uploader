@@ -9,7 +9,7 @@ const STATIC_IMAGES = [
         url: 'https://sanaan.dev/images/goreme.JPG',
         thumbnail: 'https://sanaan.dev/images/thumbnails/goreme.webp',
         originalName: 'goreme.JPG',
-        categories: ['Library', 'Favorites', 'Cappadocia'],
+        categories: ['Library', 'Favorites', 'Turkey'],
         isStatic: true,
     },
     {
@@ -17,7 +17,7 @@ const STATIC_IMAGES = [
         url: 'https://sanaan.dev/images/sapanca.JPG',
         thumbnail: 'https://sanaan.dev/images/thumbnails/sapanca.webp',
         originalName: 'sapanca.JPG',
-        categories: ['Library', 'Favorites', 'Cappadocia'],
+        categories: ['Library', 'Favorites', 'Turkey'],
         isStatic: true,
     },
     {
@@ -25,7 +25,7 @@ const STATIC_IMAGES = [
         url: 'https://sanaan.dev/images/volcano.JPG',
         thumbnail: 'https://sanaan.dev/images/thumbnails/volcano.webp',
         originalName: 'volcano.JPG',
-        categories: ['Library', 'Favorites', 'Cappadocia'],
+        categories: ['Library', 'Favorites', 'Turkey'],
         isStatic: true,
     },
     {
@@ -33,7 +33,7 @@ const STATIC_IMAGES = [
         url: 'https://assets.sanaan.dev/constants/cave.JPG',
         thumbnail: 'https://sanaan.dev/images/thumbnails/cave.webp',
         originalName: 'cave.JPG',
-        categories: ['Library', 'Cappadocia'],
+        categories: ['Library', 'Turkey'],
         isStatic: true,
     },
     {
@@ -49,7 +49,7 @@ const STATIC_IMAGES = [
         url: 'https://sanaan.dev/images/balloon1.JPG',
         thumbnail: 'https://sanaan.dev/images/thumbnails/balloon1.webp',
         originalName: 'balloon1.JPG',
-        categories: ['Library', 'Cappadocia'],
+        categories: ['Library', 'Turkey'],
         isStatic: true,
     },
     {
@@ -57,7 +57,7 @@ const STATIC_IMAGES = [
         url: 'https://sanaan.dev/images/balloon2.JPG',
         thumbnail: 'https://sanaan.dev/images/thumbnails/balloon2.webp',
         originalName: 'balloon2.JPG',
-        categories: ['Library', 'Cappadocia'],
+        categories: ['Library', 'Turkey'],
         isStatic: true,
     },
     {
@@ -65,7 +65,7 @@ const STATIC_IMAGES = [
         url: 'https://sanaan.dev/images/balloon3.JPG',
         thumbnail: 'https://sanaan.dev/images/thumbnails/balloon3.webp',
         originalName: 'balloon3.JPG',
-        categories: ['Library', 'Cappadocia'],
+        categories: ['Library', 'Turkey'],
         isStatic: true,
     },
 ];
