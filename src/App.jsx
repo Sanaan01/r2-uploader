@@ -109,7 +109,7 @@ function App() {
 
     if (!isR2Configured()) {
       setToast({
-        message: 'R2 not configured. Please set up your .env file.',
+        message: 'Upload API not configured. Set VITE_UPLOAD_API_URL and VITE_UPLOAD_API_KEY in .env',
         type: 'error',
       });
       return;
@@ -191,10 +191,10 @@ function App() {
   const config = getConfig();
 
   return (
-    <main className="p-6 flex-center min-h-screen">
-      <div className="w-full max-w-4xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+    <main className="sm:p-6 flex-center min-h-screen">
+      <div className="w-full max-w-4xl sm:block">
+        {/* Header - hidden on mobile */}
+        <div className="hidden sm:flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white font-georama">
               R2 Gallery Uploader
@@ -206,23 +206,22 @@ function App() {
           <ThemeToggle theme={theme} onThemeChange={setTheme} />
         </div>
 
-        {/* Configuration Warning */}
+        {/* Configuration Warning - hidden on mobile */}
         {!config.isConfigured && (
-          <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-start gap-3">
+          <div className="hidden sm:flex mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl items-start gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-yellow-200 font-medium">R2 Not Configured</p>
+              <p className="text-yellow-200 font-medium">Upload API Not Configured</p>
               <p className="text-yellow-300/70 text-sm mt-1">
-                Copy <code className="bg-yellow-500/20 px-1 rounded">.env.example</code> to{' '}
-                <code className="bg-yellow-500/20 px-1 rounded">.env</code> and add your
-                Cloudflare R2 credentials.
+                Set <code className="bg-yellow-500/20 px-1 rounded">VITE_UPLOAD_API_URL</code> and{' '}
+                <code className="bg-yellow-500/20 px-1 rounded">VITE_UPLOAD_API_KEY</code> in your .env file.
               </p>
             </div>
           </div>
         )}
 
         {/* Main Window */}
-        <WindowFrame title="Gallery Upload">
+        <WindowFrame title="Gallery Uploader">
           {/* Category Selector */}
           <div className="mb-4 p-4 bg-white/5 rounded-xl border border-white/10">
             <div className="flex items-center gap-2 mb-3">
@@ -300,15 +299,12 @@ function App() {
           )}
         </WindowFrame>
 
-        {/* Config Info */}
+        {/* Config Info - hidden on mobile */}
         {config.isConfigured && (
-          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">
+          <div className="hidden sm:flex mt-4 items-center justify-center gap-2 text-xs text-gray-500">
             <Settings className="w-3 h-3" />
             <span>
-              Uploading to: <span className="text-gray-400">{config.bucketName}</span>
-              {config.pathPrefix && (
-                <span className="text-gray-600"> / {config.pathPrefix}</span>
-              )}
+              API: <span className="text-gray-400">{config.apiUrl}</span>
             </span>
           </div>
         )}
