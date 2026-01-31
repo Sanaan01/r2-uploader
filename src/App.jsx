@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Upload, AlertCircle, Settings, Tag, Image, FolderOpen, Plus, Loader2, X } from 'lucide-react';
+import { Upload, AlertCircle, Settings, Tag, Image, FolderOpen, Plus, Loader2, X, GripVertical } from 'lucide-react';
 import { WindowFrame, Uploader, FileList, FileGallery, Toast, ThemeToggle } from './components';
-import { uploadFile, isR2Configured, getConfig, getCategories, createCategory, deleteCategory } from './services/r2';
+import { uploadFile, isR2Configured, getConfig, getCategories, createCategory, deleteCategory, saveCategoryOrder } from './services/r2';
 
 function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system');
@@ -17,6 +17,11 @@ function App() {
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+
+  // Category drag-and-drop state
+  const [draggedCategoryIndex, setDraggedCategoryIndex] = useState(null);
+  const [dragOverCategoryIndex, setDragOverCategoryIndex] = useState(null);
+  const [confirmDeleteCategory, setConfirmDeleteCategory] = useState(null); // {id, title}
 
   // Apply theme
   useEffect(() => {
@@ -60,7 +65,6 @@ function App() {
         setAvailableCategories([
           { id: 'library', title: 'Library', isDefault: true },
           { id: 'turkey', title: 'Turkey' },
-          { id: 'qatar', title: 'Qatar' },
           { id: 'people', title: 'People' },
           { id: 'favorites', title: 'Favorites' },
         ]);
@@ -95,10 +99,64 @@ function App() {
       setAvailableCategories((prev) => prev.filter((c) => c.id !== categoryId));
       // Remove from selected if it was selected
       setSelectedCategories((prev) => prev.filter((c) => c !== categoryTitle));
+      setConfirmDeleteCategory(null);
       setToast({ message: `Category "${categoryTitle}" deleted!`, type: 'success' });
     } catch (err) {
       setToast({ message: err.message || 'Failed to delete category', type: 'error' });
     }
+  }, []);
+
+  // Category drag-and-drop handlers
+  const handleCategoryDragStart = useCallback((e, index) => {
+    // Only allow dragging non-default categories
+    if (availableCategories[index]?.isDefault) {
+      e.preventDefault();
+      return;
+    }
+    setDraggedCategoryIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  }, [availableCategories]);
+
+  const handleCategoryDragOver = useCallback((e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedCategoryIndex !== null && draggedCategoryIndex !== index) {
+      setDragOverCategoryIndex(index);
+    }
+  }, [draggedCategoryIndex]);
+
+  const handleCategoryDragLeave = useCallback(() => {
+    setDragOverCategoryIndex(null);
+  }, []);
+
+  const handleCategoryDrop = useCallback(async (e, dropIndex) => {
+    e.preventDefault();
+
+    if (draggedCategoryIndex === null || draggedCategoryIndex === dropIndex) {
+      setDraggedCategoryIndex(null);
+      setDragOverCategoryIndex(null);
+      return;
+    }
+
+    const newCategories = [...availableCategories];
+    const [draggedCategory] = newCategories.splice(draggedCategoryIndex, 1);
+    newCategories.splice(dropIndex, 0, draggedCategory);
+
+    setAvailableCategories(newCategories);
+    setDraggedCategoryIndex(null);
+    setDragOverCategoryIndex(null);
+
+    // Save new order to server
+    try {
+      await saveCategoryOrder(newCategories);
+    } catch (err) {
+      setToast({ message: err.message || 'Failed to save category order', type: 'error' });
+    }
+  }, [draggedCategoryIndex, availableCategories]);
+
+  const handleCategoryDragEnd = useCallback(() => {
+    setDraggedCategoryIndex(null);
+    setDragOverCategoryIndex(null);
   }, []);
 
   // Handle new files selected
@@ -313,14 +371,27 @@ function App() {
                   {categoriesLoading && <Loader2 className="w-3 h-3 animate-spin text-gray-500" />}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {availableCategories.map((cat) => (
+                  {availableCategories.map((cat, index) => (
                     <div
                       key={cat.id}
-                      className={`group relative flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-sm
+                      draggable={!cat.isDefault}
+                      onDragStart={(e) => handleCategoryDragStart(e, index)}
+                      onDragOver={(e) => handleCategoryDragOver(e, index)}
+                      onDragLeave={handleCategoryDragLeave}
+                      onDrop={(e) => handleCategoryDrop(e, index)}
+                      onDragEnd={handleCategoryDragEnd}
+                      className={`group relative flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all text-sm
                         ${selectedCategories.includes(cat.title)
                           ? 'bg-blue-500/20 border border-blue-500/50 text-blue-300'
-                          : 'bg-white/5 border border-white/10 text-gray-400 hover:border-white/20'}`}
+                          : 'bg-white/5 border border-white/10 text-gray-400 hover:border-white/20'}
+                        ${!cat.isDefault ? 'cursor-grab active:cursor-grabbing' : ''}
+                        ${dragOverCategoryIndex === index ? 'border-green-500 scale-105' : ''}
+                        ${draggedCategoryIndex === index ? 'opacity-50' : ''}`}
                     >
+                      {/* Drag handle for custom categories */}
+                      {!cat.isDefault && (
+                        <GripVertical className="w-3 h-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity -ml-1" />
+                      )}
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
@@ -346,7 +417,7 @@ function App() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteCategory(cat.id, cat.title);
+                            setConfirmDeleteCategory({ id: cat.id, title: cat.title });
                           }}
                           className="ml-1 p-0.5 rounded hover:bg-red-500/30 text-gray-500 hover:text-red-400 transition-colors"
                           title={`Delete ${cat.title}`}
@@ -450,6 +521,33 @@ function App() {
           type={toast.type}
           onClose={() => setToast(null)}
         />
+      )}
+
+      {/* Delete Category Confirmation Modal */}
+      {confirmDeleteCategory && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#2a2a2a] rounded-xl p-6 max-w-sm w-full border border-white/10">
+            <h3 className="text-lg font-semibold mb-2">Delete Category?</h3>
+            <p className="text-gray-400 text-sm mb-4">
+              Are you sure you want to delete "{confirmDeleteCategory.title}"? This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDeleteCategory(null)}
+                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteCategory(confirmDeleteCategory.id, confirmDeleteCategory.title)}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );

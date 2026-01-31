@@ -223,6 +223,41 @@ export const deleteCategory = async (categoryId) => {
 };
 
 /**
+ * Save category order to server
+ * @param {Array} categories - Array of category objects in display order
+ * @returns {Promise<{success: boolean, categories: Array}>}
+ */
+export const saveCategoryOrder = async (categories) => {
+    if (!isR2Configured()) {
+        throw new Error('Upload API not configured.');
+    }
+
+    try {
+        const response = await fetch(`${UPLOAD_API_URL}/categories/order`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Upload-Key': UPLOAD_API_KEY,
+            },
+            body: JSON.stringify({ categories }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to save category order');
+        }
+
+        return result;
+    } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('Cannot connect to server.');
+        }
+        throw error;
+    }
+};
+
+/**
  * Get gallery order from server
  * @returns {Promise<{order: string[]}>}
  */

@@ -6,7 +6,7 @@ A secure, macOS-styled image uploader for Cloudflare R2.
 
 - 🎨 Beautiful macOS-style UI with dark mode
 - 📸 Drag & drop image upload
-- 🏷️ Category tagging (Library, Turkey, Qatar, People, Favorites)
+- 🏷️ Category tagging (Library, Turkey, People, Favorites)
 - 📱 Mobile responsive (full-screen on mobile)
 - 🔒 Secure uploads via Worker API
 
