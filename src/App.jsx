@@ -407,7 +407,7 @@ function App() {
                       onDragLeave={handleCategoryDragLeave}
                       onDrop={(e) => handleCategoryDrop(e, index)}
                       onDragEnd={handleCategoryDragEnd}
-                      className={`group relative flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all text-sm cursor-grab active:cursor-grabbing select-none
+                      className={`group relative flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all text-sm cursor-grab active:cursor-grabbing select-none sm:select-text
                         ${selectedCategories.includes(cat.title)
                           ? 'bg-blue-500/20 border border-blue-500/50 text-blue-300'
                           : 'bg-white/5 border border-white/10 text-gray-400 hover:border-white/20'}
@@ -416,7 +416,7 @@ function App() {
                     >
                       {/* Drag handle */}
                       <GripVertical className="w-3 h-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity -ml-1" />
-                      <label className="flex items-center cursor-pointer">
+                      <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={selectedCategories.includes(cat.title)}
@@ -434,8 +434,9 @@ function App() {
                             </svg>
                           )}
                         </span>
+                        <span className="hidden sm:inline">{cat.title}</span>
                       </label>
-                      <span className="ml-1">{cat.title}</span>
+                      <span className="ml-1 sm:hidden">{cat.title}</span>
                       {/* Delete button for custom categories */}
                       {!cat.isDefault && (
                         <button
