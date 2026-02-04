@@ -13,6 +13,18 @@ export const isR2Configured = () => {
 };
 
 /**
+ * Helper to handle fetch errors consistently
+ * @param {Error} error - The caught error
+ * @param {string} message - Custom message for connection errors
+ */
+const handleFetchError = (error, message = 'Cannot connect to server.') => {
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error(message);
+    }
+    throw error;
+};
+
+/**
  * Upload a file to R2 via the secure Worker API
  * @param {File} file - The file to upload
  * @param {string} customPath - Optional custom path/filename (unused, worker handles naming)
@@ -52,10 +64,7 @@ export const uploadFile = async (file, customPath = null, onProgress = null, cat
 
         return { key: result.key, url: result.url };
     } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Cannot connect to upload server. Make sure the Worker is running.');
-        }
-        throw error;
+        handleFetchError(error, 'Cannot connect to upload server. Make sure the Worker is running.');
     }
 };
 
@@ -82,10 +91,7 @@ export const listFiles = async () => {
 
         return result;
     } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Cannot connect to server.');
-        }
-        throw error;
+        handleFetchError(error);
     }
 };
 
@@ -113,10 +119,7 @@ export const deleteFile = async (key) => {
 
         return result;
     } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Cannot connect to server.');
-        }
-        throw error;
+        handleFetchError(error);
     }
 };
 
@@ -148,10 +151,7 @@ export const getCategories = async () => {
 
         return result;
     } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Cannot connect to server.');
-        }
-        throw error;
+        handleFetchError(error);
     }
 };
 
@@ -184,10 +184,7 @@ export const createCategory = async (title, icon = null) => {
 
         return result;
     } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Cannot connect to server.');
-        }
-        throw error;
+        handleFetchError(error);
     }
 };
 
@@ -215,10 +212,7 @@ export const deleteCategory = async (categoryId) => {
 
         return result;
     } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Cannot connect to server.');
-        }
-        throw error;
+        handleFetchError(error);
     }
 };
 
@@ -250,10 +244,7 @@ export const saveCategoryOrder = async (categories) => {
 
         return result;
     } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Cannot connect to server.');
-        }
-        throw error;
+        handleFetchError(error);
     }
 };
 
@@ -275,10 +266,7 @@ export const getGalleryOrder = async () => {
 
         return result;
     } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Cannot connect to server.');
-        }
-        throw error;
+        handleFetchError(error);
     }
 };
 
@@ -310,10 +298,7 @@ export const saveGalleryOrder = async (order) => {
 
         return result;
     } catch (error) {
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('Cannot connect to server.');
-        }
-        throw error;
+        handleFetchError(error);
     }
 };
 
